@@ -38,22 +38,19 @@ PubSubClient client(gsmClient);
 uint32_t lastTime = 0;
 unsigned long tiempo;
 
-float latitude; //
-float longitude; //Variável onde iremos armazenar o valor da temperatura
-float speed;
-float temperature;
-float humidity;
-char msg[25];
+
+char msg[40];
 long lastMsg = 0;
 
 
 
 // DECLARAR FUNCIONES A USAR
+void GET_THE_GPS(float *longitud, float *latitud);
 void setupGSM();
 void data_to_publish_MQTT();
 void reconnect();
 void Check_GSM_Network();
-void readRSSI();
+String readRSSI();
 
 void setup()
 {
@@ -82,10 +79,24 @@ void loop()
   client.loop();
 
   long now = millis();
-  if(now - lastTime > 500)
-    {
+  if(now - lastTime > 500){
     lastMsg = now;
-    data_to_publish_MQTT();
+    /// GET THE RSSI ///
+    String RSmyRSSI = readRSSI();
+    int RSSI = RSmyRSSI.toInt();
+    /// GET THE GPS ///
+		float lon = 0;
+		float lat =0;
+		GET_THE_GPS(&lon,&lat);
+    // GET THE ALERT TAG //
+    String msg_alert = "1";
+    String to_send = "RSSI:" + String(RSSI) + "," +  "lon:" + String(lon) + "," +  "lat:" + String(lat) + "," + "Alert:"+ msg_alert ;
+		to_send.toCharArray(msg, 40);
+		Serial.print("Publicamos Mensaje No seguro -> "); 
+		Serial.println(msg);
+		client.publish("msj_no_seguro", msg);
+
+
     delay(5000);
     }
 }
@@ -159,25 +170,8 @@ void reconnect() {
 }
 
 
-void data_to_publish_MQTT()
-{
-  //Cria o json que iremos enviar para o server MQTT
-  //readGPS();
-    readRSSI();
+String readRSSI(){
 
-    int h = random(10, 20);
-    int t = random(20, 30);
-    int f = random(40, 50);
-		String to_send = String(h) + "," + String(t) + "," + String(f);
-		to_send.toCharArray(msg, 25);
-		Serial.print("Publicamos mensaje -> ");
-		Serial.println(msg);
-		client.publish("values", msg);
-	}
-  
-
-void readRSSI(){
-Serial.println("Leeyendo RSSI");  
 SerialGSM.println("AT+CSQ");
   bool encontrada = false;
   String cadena_entrante = "";
@@ -187,7 +181,7 @@ SerialGSM.println("AT+CSQ");
       char c = SerialGSM.read();
       if(c == '\n') {
         cadena_entrante += '\0';
-        Serial.println(cadena_entrante);
+        //Serial.println(cadena_entrante);
         if(cadena_entrante.indexOf("+CSQ:") >= 0) {
           encontrada = true;
         }
@@ -199,13 +193,8 @@ SerialGSM.println("AT+CSQ");
       break;
     }
   }
-  if(encontrada){
-    Serial.println("Encontrada OK");
-  }
-  else {
-    Serial.println("No encontrada");
-  }
-
+  cadena_entrante.remove(0, 5);
+  return cadena_entrante;
 }
 
 
@@ -222,4 +211,13 @@ void Check_GSM_Network(){
     Serial.println("Hay Red!!");
     return;
   }
+}
+
+
+void GET_THE_GPS(float *longitud, float *latitud){
+	
+
+  *longitud = random(1, 500) / 100.0;
+	*latitud = random(1, 500) / 100.0;
+
 }
