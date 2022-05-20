@@ -51,7 +51,6 @@ long lastMsg = 0;
 // DECLARAR FUNCIONES A USAR
 void setupGSM();
 void data_to_publish_MQTT();
-void callback(char* topic, byte* payload, unsigned int length);
 void reconnect();
 void Check_GSM_Network();
 void readRSSI();
@@ -67,7 +66,6 @@ void setup()
 	randomSeed(micros());
   // CONFIG MQTT
 	client.setServer(mqtt_server, mqtt_port);
-	client.setCallback(callback);
   // Config Cripto
 
   
@@ -177,27 +175,6 @@ void data_to_publish_MQTT()
 		client.publish("values", msg);
 	}
   
-
-
-void callback(char* topic, byte* payload, unsigned int length){
-    String incoming = "";
-    Serial.print("Mensaje recibido desde -> ");
-    Serial.print(topic);
-    Serial.println("");
-    for (int i = 0; i < length; i++) {
-        incoming += (char)payload[i];
-    }
-    incoming.trim();
-    Serial.println("Mensaje -> " + incoming);
-
-    if ( incoming == "on") {
-        digitalWrite(ONBOARD_LED, HIGH);
-    } else {
-        digitalWrite(ONBOARD_LED, LOW);
-    }
-}
-
-
 
 void readRSSI(){
 Serial.println("Leeyendo RSSI");  
